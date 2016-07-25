@@ -1,6 +1,6 @@
 # Images to Video
 ## A python script that uses FFMPEG to convert a sequence of dynamically timestamped images into a video
-Using a batching approach, it divides up the source images into ~10 equal sized groups and then runs each group through two steps: 1) duplication of image frames to upsample input frame rate 2) converting those image frames into a video. Finally these sub-videos are concatenated together to produce one final video.
+Using a batching approach, it divides up the source images into ~10 equal sized groups and then runs each group through two steps: 1) duplication of image frames to upsample input frame rate 2) converting those image frames into a sub-video. Finally these sub-videos are concatenated together to produce one final video.
 
 ### Dependencies
 - Python
