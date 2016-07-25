@@ -2,6 +2,8 @@
 ## A python script that uses FFMPEG to convert a sequence of dynamically timestamped images into a video
 Using a batching approach, it divides up the source images into ~10 equal sized groups and then runs each group through two steps: 1) duplication of image frames to upsample input frame rate 2) converting those image frames into a sub-video. Finally these sub-videos are concatenated together to produce one final video.
 
+Only tested on OSX (though should work on Windows too with some adjustments)
+
 ### Dependencies
 - Python
   
@@ -9,12 +11,10 @@ Using a batching approach, it divides up the source images into ~10 equal sized 
 
 - FFMPEG
   
-  On Mac: Recommend installing using Homebrew - http://brew.sh/ - After setting up Homebrew paste the following into Terminal to get all the codec's you'll ever need:
+  Recommend installing FFMPEG using Homebrew - http://brew.sh/ - After setting up Homebrew paste the following into Terminal to get all the codec's you'll ever need:
   ```
   brew install ffmpeg --with-vpx --with-vorbis --with-libvorbis --with-vpx --with-vorbis --with-theora --with-libogg --with-libvorbis --with-gpl --with-version3 --with-nonfree --with-postproc --with-libaacplus --with-libass --with-libcelt --with-libfaac --with-libfdk-aac --with-libfreetype --with-libmp3lame --with-libopencore-amrnb --with-libopencore-amrwb --with-libopenjpeg --with-openssl --with-libopus --with-libschroedinger --with-libspeex --with-libtheora --with-libvo-aacenc --with-libvorbis --with-libvpx --with-libx264 --with-libxvid
   ```
-
-  On Windows: Download the appropriate static version of FFMPEG - https://ffmpeg.zeranoe.com/builds/
 
 ### Running
 Specify frame_rate prior to running. Here are some tips for selecting a value:
