@@ -18,7 +18,7 @@ Only tested on OSX (though should work on Windows too with some adjustments)
 
 ### Running
 Specify frame_rate prior to running. Here are some tips for selecting a value:
-  - higher framerate values produce video output that is more accurate to the source frames. This is important for dynamically timestamped images that have higher chance of temporal drift between files' (for most cases I recommend a value that is double that of the average input framerate)
-  - framerate determines storage usage (so if the source images take up 100 GB at 10 fps, specifying 20 fps in a naive implementation would temporarily demand 200 GB of space. Because of designing in batching, this script only needs 1/10th of that, so in this example it would temporarily demand an extra 20 GB of space.
+  - A higher frame_rate value produce video output that is more accurate to the source frames. This is important for dynamically timestamped images that have higher chance of temporal drift between files. For most cases I recommend a value that is double that of the average expected input framerate.
+  - The frame_rate value determines how much storage usage will be required. If the source images take up 100 GB at 10 fps, specifying 20 fps in a naive implementation would temporarily demand 200 GB of space due to doubling of the framerate. By incorporating batching, processing only requires 1/10th of this overhead. In the prior example, processing would temporarily require 20 GB of free space.
 
-Script assumes names of images are their timestamps (time of generation) in HH-MM-SS-ms format. 
+Script assumes names of images are their timestamps (time of generation) in HH-MM-SS-ms format, and can be modified according to http://strftime.org/
