@@ -5,7 +5,7 @@ Using a batching approach, it divides up the source images into ~10 equal sized 
 ### Dependencies
 - Python
   
-  Written with core 2.7
+  Written to work with core 2.7 and 3.5
 
 - FFMPEG
   
