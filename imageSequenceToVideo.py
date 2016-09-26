@@ -18,7 +18,7 @@ if sys.version_info <= (3,0):
     root.withdraw()
     import tkFileDialog
     parent_dir = tkFileDialog.askdirectory()
-    write_format = 'wb'
+    write_format = 'w'
 else:
     #py3
     import tkinter as tk
@@ -103,11 +103,11 @@ def convert(ext, temp, num, out):
     return stdout, stderr
 
 
-def video_concat(txt_file, out_video):
+def video_concat(batch_dir, txt_file, out_video):
     ffmpeg_cmd = 'ffmpeg -f concat -safe 0 -i {0} -c copy {1}'
     txt_file = '"' + txt_file + '"'
     out_video = '"' + out_video + '"'
-    p = Popen(ffmpeg_cmd.format(txt_file, out_video), stdout=PIPE, stderr=PIPE, shell=True)
+    p = Popen(ffmpeg_cmd.format(txt_file, out_video), cwd=batch_dir, stdout=PIPE, stderr=PIPE, shell=True)
     stdout, stderr = p.communicate(input=None)
     return stdout, stderr
 
@@ -119,16 +119,17 @@ def clear(tem_dir):
 
 def combine(batch_dir, out):
     data = []
-    temp_file = os.path.join(batch_dir, "temp.txt")
+    temp_file = "temp.txt"
+    temp_path = os.path.join(batch_dir, temp_file)
     out_file = os.path.join(out, "video.mp4")
     if not os.path.exists(out):
         os.makedirs(out)
-    with open(temp_file, write_format) as temp_txt:
+    with open(temp_path, write_format) as temp_txt:
         for el in os.listdir(batch_dir):
             if "temp" not in el:
-                data.append('file '+"'"+os.path.join(batch_dir, el)+"'\n")
+                data.append("file '"+el+"'"+os.linesep)
         temp_txt.writelines(data)
-    video_concat(temp_file, out_file)
+    video_concat(batch_dir, temp_file, out_file)
     shutil.rmtree(batch_dir)
     return
 
