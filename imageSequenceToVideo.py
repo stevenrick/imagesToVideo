@@ -10,6 +10,9 @@ from decimal import Decimal
 from subprocess import Popen, PIPE
 
 import sys
+
+chunkLoops = 10
+
 #check version
 if sys.version_info <= (3,0):
     #py2
@@ -17,7 +20,11 @@ if sys.version_info <= (3,0):
     root = tk.Tk()
     root.withdraw()
     import tkFileDialog
-    parent_dir = tkFileDialog.askdirectory()
+    import tkMessageBox
+    tkMessageBox.showinfo("","Select directory containing images")
+    raw_dir = tkFileDialog.askdirectory()
+    tkMessageBox.showinfo("", "Select directory where you want to save (make sure Free Space > 1/10 of total size of images)")
+    work_dir = tkFileDialog.askdirectory()
     write_format = 'w'
 else:
     #py3
@@ -25,7 +32,11 @@ else:
     root = tk.Tk()
     root.withdraw()
     from tkinter import filedialog
-    parent_dir = filedialog.askdirectory()
+    from tkinter import messagebox
+    messagebox.showinfo("","Select directory containing images")
+    raw_dir = filedialog.askdirectory()
+    messagebox.showinfo("","Select directory where you want to save (make sure Free Space > 1/10 of total size of images)")
+    work_dir = filedialog.askdirectory()
     write_format = 'w'
 
 
@@ -41,7 +52,7 @@ def chunks(l, n):
 def batch(parent_dir, temp_dir, batch_vid_dir):
     imgs = list(os.listdir(parent_dir))
     total_size = len(imgs)
-    batch_size = int(total_size / 10)
+    batch_size = int(total_size / chunkLoops)
     groups = chunks(imgs, batch_size)
     for sub in groups:
         # eliminate small groups
@@ -54,9 +65,11 @@ def batch(parent_dir, temp_dir, batch_vid_dir):
             groups[groups.index(sub2)].insert(0, groups[groups.index(sub2) - 1][-1])
     num = 1
     for sub3 in groups:
+        printString = "Progress: " + str(groups.index(sub3)) + " out of " + str(len(groups))
+        print(printString)
         ext = prep(sub3, parent_dir, temp_dir)
         convert(ext, temp_dir, num, batch_vid_dir)
-        clear(temp_dir)
+        #clear(temp_dir)
         num += 1
     return
 
@@ -109,6 +122,8 @@ def video_concat(batch_dir, txt_file, out_video):
     out_video = '"' + out_video + '"'
     p = Popen(ffmpeg_cmd.format(txt_file, out_video), cwd=batch_dir, stdout=PIPE, stderr=PIPE, shell=True)
     stdout, stderr = p.communicate(input=None)
+    print(stdout)
+    print(stderr)
     return stdout, stderr
 
 
@@ -130,14 +145,16 @@ def combine(batch_dir, out):
                 data.append("file '"+el+"'"+os.linesep)
         temp_txt.writelines(data)
     video_concat(batch_dir, temp_file, out_file)
-    shutil.rmtree(batch_dir)
+    #shutil.rmtree(batch_dir)
     return
 
 
 if __name__ == '__main__':
-    temp_dir = os.path.join(parent_dir,'temp')
-    batch_vid_dir = os.path.join(parent_dir,'batch_videos')
-    out_dir = os.path.join(parent_dir,'output')
+    temp_dir = os.path.join(work_dir,'temp')
+    batch_vid_dir = os.path.join(work_dir,'batch_videos')
+    out_dir = os.path.join(work_dir,'output')
 
-    batch(parent_dir, temp_dir, batch_vid_dir)
+    print("Splitting")
+    batch(raw_dir, temp_dir, batch_vid_dir)
+    print("Combining")
     combine(batch_vid_dir, out_dir)
