@@ -69,7 +69,7 @@ def batch(parent_dir, temp_dir, batch_vid_dir):
         print(printString)
         ext = prep(sub3, parent_dir, temp_dir)
         convert(ext, temp_dir, num, batch_vid_dir)
-        #clear(temp_dir)
+        clear(temp_dir)
         num += 1
     return
 
@@ -145,7 +145,7 @@ def combine(batch_dir, out):
                 data.append("file '"+el+"'"+os.linesep)
         temp_txt.writelines(data)
     video_concat(batch_dir, temp_file, out_file)
-    #shutil.rmtree(batch_dir)
+    shutil.rmtree(batch_dir)
     return
 
 
