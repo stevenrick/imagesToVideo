@@ -25,6 +25,7 @@ if sys.version_info <= (3,0):
     raw_dir = tkFileDialog.askdirectory()
     tkMessageBox.showinfo("", "Select directory where you want to save (make sure Free Space > 1/10 of total size of images)")
     work_dir = tkFileDialog.askdirectory()
+    root.update()
     write_format = 'w'
 else:
     #py3
@@ -37,6 +38,7 @@ else:
     raw_dir = filedialog.askdirectory()
     messagebox.showinfo("","Select directory where you want to save (make sure Free Space > 1/10 of total size of images)")
     work_dir = filedialog.askdirectory()
+    root.update()
     write_format = 'w'
 
 
@@ -65,8 +67,8 @@ def batch(parent_dir, temp_dir, batch_vid_dir):
             groups[groups.index(sub2)].insert(0, groups[groups.index(sub2) - 1][-1])
     num = 1
     for sub3 in groups:
-        printString = "Progress: " + str(groups.index(sub3)) + " out of " + str(len(groups))
-        print(printString)
+        batchProgStr = "Batch: " + str(num) + " out of " + str(len(groups))
+        print(batchProgStr)
         ext = prep(sub3, parent_dir, temp_dir)
         convert(ext, temp_dir, num, batch_vid_dir)
         clear(temp_dir)
@@ -86,16 +88,18 @@ def prep(sub_batch, par_dir, tem_dir):
     space = str(int(Decimal(1.0/frame_rate)*1000000)).zfill(6)
     offset_str = '0-00-00-'+space
 
-    n = 0
+    n = 1
     zero = datetime.strptime(os.path.splitext(sub_batch[0])[0], '%H-%M-%S-%f')
     previousTime = zero
     offset = datetime.strptime(offset_str, '%H-%M-%S-%f')-datetime.strptime('0-00-00-00', '%H-%M-%S-%f')
     for img in sub_batch:
+        subBatchProgStr = "Image: " + str(n)
+        print(subBatchProgStr)
         ext = os.path.splitext(img)[1]
         img_path = os.path.join(par_dir, img)
         time = datetime.strptime(os.path.splitext(img)[0], '%H-%M-%S-%f')
         while (previousTime-zero) < (time-zero):
-            out_name = str(n + 1).zfill(output_len)+ext
+            out_name = str(n).zfill(output_len)+ext
             out_path = os.path.join(tem_dir, out_name)
             shutil.copy(img_path, out_path)
             n += 1
@@ -107,7 +111,7 @@ def convert(ext, temp, num, out):
     if not os.path.exists(out):
         os.makedirs(out)
     vid_num = str(num).zfill(output_len) + ".mp4"
-    ffmpeg_cmd = 'ffmpeg -framerate {0} -i {1}/%10d{4} -c:v libx264 {2}/{3}'
+    ffmpeg_cmd = 'ffmpeg -framerate {0} -i {1}/%10d{4} -c:v libx264 -pix_fmt yuv420p {2}/{3}'
     temp = '"' + temp + '"'
     out = '"' + out + '"'
     input_rate = '"' + str(int(frame_rate)) + '"'
@@ -117,13 +121,13 @@ def convert(ext, temp, num, out):
 
 
 def video_concat(batch_dir, txt_file, out_video):
-    ffmpeg_cmd = 'ffmpeg -f concat -safe 0 -i {0} -c copy {1}'
+    ffmpeg_cmd = 'ffmpeg -f concat -i {0} -c copy {1}'
     txt_file = '"' + txt_file + '"'
     out_video = '"' + out_video + '"'
     p = Popen(ffmpeg_cmd.format(txt_file, out_video), cwd=batch_dir, stdout=PIPE, stderr=PIPE, shell=True)
     stdout, stderr = p.communicate(input=None)
-    print(stdout)
-    print(stderr)
+    #print(stdout)
+    #print(stderr)
     return stdout, stderr
 
 
