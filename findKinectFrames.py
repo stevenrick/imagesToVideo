@@ -1,10 +1,14 @@
-import os
 from datetime import datetime
 import shutil
+import os
 from decimal import Decimal
 from subprocess import Popen, PIPE
 import sys
+import fnmatch
+import shutil
 
+
+chunkLoops = 10
 
 #check version
 if sys.version_info <= (3,0):
@@ -27,7 +31,7 @@ def chunks(l, n):
 def batch(parent_dir, temp_dir, batch_vid_dir):
     imgs = list(os.listdir(parent_dir))
     total_size = len(imgs)
-    batch_size = int(total_size / 10)
+    batch_size = int(total_size / chunkLoops)
     groups = chunks(imgs, batch_size)
     for sub in groups:
         # eliminate small groups
@@ -40,6 +44,8 @@ def batch(parent_dir, temp_dir, batch_vid_dir):
             groups[groups.index(sub2)].insert(0, groups[groups.index(sub2) - 1][-1])
     num = 1
     for sub3 in groups:
+        batchProgStr = "Batch: " + str(num) + " out of " + str(len(groups))
+#         print(batchProgStr)
         ext = prep(sub3, parent_dir, temp_dir)
         convert(ext, temp_dir, num, batch_vid_dir)
         clear(temp_dir)
@@ -59,16 +65,18 @@ def prep(sub_batch, par_dir, tem_dir):
     space = str(int(Decimal(1.0/frame_rate)*1000000)).zfill(6)
     offset_str = '0-00-00-'+space
 
-    n = 0
+    n = 1
     zero = datetime.strptime(os.path.splitext(sub_batch[0])[0], '%H-%M-%S-%f')
     previousTime = zero
     offset = datetime.strptime(offset_str, '%H-%M-%S-%f')-datetime.strptime('0-00-00-00', '%H-%M-%S-%f')
     for img in sub_batch:
+        subBatchProgStr = "Image: " + str(n)
+#         print(subBatchProgStr)
         ext = os.path.splitext(img)[1]
         img_path = os.path.join(par_dir, img)
         time = datetime.strptime(os.path.splitext(img)[0], '%H-%M-%S-%f')
         while (previousTime-zero) < (time-zero):
-            out_name = str(n + 1).zfill(output_len)+ext
+            out_name = str(n).zfill(output_len)+ext
             out_path = os.path.join(tem_dir, out_name)
             shutil.copy(img_path, out_path)
             n += 1
@@ -80,7 +88,7 @@ def convert(ext, temp, num, out):
     if not os.path.exists(out):
         os.makedirs(out)
     vid_num = str(num).zfill(output_len) + ".mp4"
-    ffmpeg_cmd = 'ffmpeg -framerate {0} -i {1}/%10d{4} -c:v libx264 {2}/{3}'
+    ffmpeg_cmd = 'ffmpeg -framerate {0} -i {1}/%10d{4} -c:v libx264 -pix_fmt yuv420p {2}/{3}'
     temp = '"' + temp + '"'
     out = '"' + out + '"'
     input_rate = '"' + str(int(frame_rate)) + '"'
@@ -89,12 +97,14 @@ def convert(ext, temp, num, out):
     return stdout, stderr
 
 
-def video_concat(txt_file, out_video):
-    ffmpeg_cmd = 'ffmpeg -f concat -safe 0 -i {0} -c copy {1}'
+def video_concat(batch_dir, txt_file, out_video):
+    ffmpeg_cmd = 'ffmpeg -f concat -i {0} -c copy {1}'
     txt_file = '"' + txt_file + '"'
     out_video = '"' + out_video + '"'
-    p = Popen(ffmpeg_cmd.format(txt_file, out_video), stdout=PIPE, stderr=PIPE, shell=True)
+    p = Popen(ffmpeg_cmd.format(txt_file, out_video), cwd=batch_dir, stdout=PIPE, stderr=PIPE, shell=True)
     stdout, stderr = p.communicate(input=None)
+    #print(stdout)
+    #print(stderr)
     return stdout, stderr
 
 
@@ -103,59 +113,98 @@ def clear(tem_dir):
     return
 
 
-def combine(batch_dir, out, id):
+def combine(batch_dir, out_file):
     data = []
-    temp_file = os.path.join(batch_dir, "temp.txt")
-    videoName = id+"_kinect_video.mp4"
-    out_file = os.path.join(out, videoName)
-    if not os.path.exists(out):
-        os.makedirs(out)
-    with open(temp_file, write_format) as temp_txt:
+    temp_file = "temp.txt"
+    temp_path = os.path.join(batch_dir, temp_file)
+    with open(temp_path, write_format) as temp_txt:
         for el in os.listdir(batch_dir):
             if "temp" not in el:
-                data.append('file '+"'"+os.path.join(batch_dir, el)+"'\n")
+                data.append("file '"+el+"'"+os.linesep)
         temp_txt.writelines(data)
-    video_concat(temp_file, out_file)
+    video_concat(batch_dir, temp_file, out_file)
     shutil.rmtree(batch_dir)
     return
 
 
+def getDirectoryList(path):
+    directoryList = []
+
+    #return nothing if path is a file
+    if os.path.isfile(path):
+        return []
+
+    #add dir to directorylist if it contains .bmp or .png files
+    if len([f for f in os.listdir(path) if (f.endswith('.bmp') or f.endswith('.png'))])>0:
+        directoryList.append(path)
+
+    for d in os.listdir(path):
+        new_path = os.path.join(path, d)
+        if os.path.isdir(new_path):
+            directoryList += getDirectoryList(new_path)
+
+    return directoryList
+    
+    
+def getVideos(path):
+    videoList = []
+
+    #return nothing if path is a file
+    if os.path.isfile(path):
+        return []
+
+    #add dir to videoList if it contains .mp4 files
+    if len([f for f in os.listdir(path) if (f.endswith('.mp4'))])>0:
+        videoList.append(path)
+
+    for d in os.listdir(path):
+        new_path = os.path.join(path, d)
+        if os.path.isdir(new_path):
+            videoList += getVideos(new_path)
+
+    return videoList
+
+
 def firstPass(dataDir):
     kinectDirList = []
-    sessions = [x for x in os.listdir(dataDir) if x != ".DS_Store"]
-    for session in sessions:
-        sessionPath = os.path.join(dataDir,session)
-        for contents in os.listdir(sessionPath):
-            if "Kinect" in contents:
-                kinectDir = os.path.join(sessionPath,contents)
-                for el in os.listdir(kinectDir):
-                    kinectDirList.append(os.path.join(kinectDir,el))
+    kinectDirList = getDirectoryList(dataDir)
     return kinectDirList
 
 
 def secondPass(kinectDirList):
-    cleanKinectDirList = [x for x in kinectDirList if ".DS_Store" not in x]
-    for el in cleanKinectDirList:
-        id = os.path.basename(el).split('_')[0]
-        video = id+"_kinect_video.mp4"
-        if video in os.listdir(el):
-            print id, 'already done... skipping'
+    for frameDir in kinectDirList:
+        id_pre = frameDir.split("/frames/")
+        id = id_pre[0].split("/")[-1].replace(" ","_")
+        type = id_pre[1]
+        outpath = os.path.join(id_pre[0])
+        video = id+"_kinect_video_"+type+".mp4"
+        if video in os.listdir(outpath):
+            print id, type, 'already done... skipping'
         else:
-            print 'processing', id+'...'
-            framePath = os.path.join(el,[x for x in os.listdir(el) if x == "frames"][0])
-            colorPath = os.path.join(framePath,[x for x in os.listdir(framePath) if x == "color"][0])
-            
-            temp_dir = os.path.join(framePath,'temp')
-            batch_vid_dir = os.path.join(framePath,'batch_videos')
-            out_dir = el
-            
-            batch(colorPath, temp_dir, batch_vid_dir)
-            combine(batch_vid_dir, out_dir, id)
-            print id, 'done...'
+            print 'processing', id, type, '...'
+            temp_dir = os.path.join(outpath,'temp')
+            batch_vid_dir = os.path.join(outpath,'batch_videos')
+            batch(frameDir, temp_dir, batch_vid_dir)
+            combine(batch_vid_dir, os.path.join(outpath, video))
+            print id, type, 'done...'
+    return
+    
+    
+def moveVideosUpOneLevel(vidDirList):
+    for dir in vidDirList:
+        videos = [f for f in os.listdir(dir) if f.endswith('.mp4')]
+        for vid in videos:
+            oldpath = os.path.join(dir, vid)
+            newpath = os.path.join(os.path.dirname(os.path.dirname(oldpath)), os.path.split(oldpath)[1])
+            shutil.move(oldpath, newpath)
     return
 
 
 if __name__ == '__main__':
-    dataDir = "/Volumes/Data/smoke-backup/Data"
-    kinectDirList = firstPass(dataDir)
-    screenedKinectList = secondPass(kinectDirList)
+    dataDir = "/Volumes/My Book Pro/OneDrive Backups/OneDrive - UC San Diego/weibel-lab Share/Stroke"
+    # # run once to move videos up
+    # videoDirList = getVideos(dataDir)
+    # moveVideosUpOneLevel(videoDirList)
+    
+    kinectFrameDirList = firstPass(dataDir)
+    screenedKinectList = secondPass(kinectFrameDirList)
