@@ -69,6 +69,7 @@ def prep(sub_batch, par_dir, tem_dir):
     zero = datetime.strptime(os.path.splitext(sub_batch[0])[0], '%H-%M-%S-%f')
     previousTime = zero
     offset = datetime.strptime(offset_str, '%H-%M-%S-%f')-datetime.strptime('0-00-00-00', '%H-%M-%S-%f')
+    sub_batch = [f for f in sub_batch if "screenshots.csv" not in f]
     for img in sub_batch:
         subBatchProgStr = "Image: " + str(n)
 #         print(subBatchProgStr)
@@ -201,7 +202,7 @@ def moveVideosUpOneLevel(vidDirList):
 
 
 if __name__ == '__main__':
-    dataDir = "/Volumes/My Book Pro/OneDrive Backups/OneDrive - UC San Diego/weibel-lab Share/Stroke"
+    dataDir = "/Volumes/My Book Pro/OneDrive Backups/Local Stroke Backup"
     # # run once to move videos up
     # videoDirList = getVideos(dataDir)
     # moveVideosUpOneLevel(videoDirList)
