@@ -11,9 +11,9 @@ Tested on OSX and Windows
 
 - FFMPEG
   
-  Recommend installing FFMPEG using Homebrew - http://brew.sh/ - After setting up Homebrew paste the following into Terminal to get all the codec's you'll ever need:
+  Recommend installing FFMPEG using Homebrew - http://brew.sh/ - After setting up Homebrew paste the following into Terminal to get all the codec's you'll ever need (this uses grep to include every --with- flag available):
   ```
-  brew install ffmpeg --with-vpx --with-vorbis --with-libvorbis --with-vpx --with-vorbis --with-theora --with-libogg --with-libvorbis --with-gpl --with-version3 --with-nonfree --with-postproc --with-libaacplus --with-libass --with-libcelt --with-libfaac --with-libfdk-aac --with-libfreetype --with-libmp3lame --with-libopencore-amrnb --with-libopencore-amrwb --with-libopenjpeg --with-openssl --with-libopus --with-libschroedinger --with-libspeex --with-libtheora --with-libvo-aacenc --with-libvorbis --with-libvpx --with-libx264 --with-libxvid
+  brew install ffmpeg $(brew options ffmpeg | grep -vE '\s' | grep -- '--with-' | tr '\n' ' ')
   ```
 
 ### Running
