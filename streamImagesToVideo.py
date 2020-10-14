@@ -77,7 +77,7 @@ def streamToVideo(img_dir, out_dir, session):
     previousTime = timeArray[0]
     previousImgPath = os.path.join(img_dir, timeFileDict[previousTime])
     for currentTime in timeArray[1:]:
-        while (currentTime - previousTime) > offset:
+        while (round((currentTime - previousTime),4) >= offset):
             readImgToFfmpeg(previousImgPath, subProc)
             previousTime += offset
         previousTime = currentTime
